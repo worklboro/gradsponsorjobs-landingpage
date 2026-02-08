@@ -1,3 +1,5 @@
+// Legacy Vercel Serverless Function (archived).
+// This is kept for reference only and is not used in the Cloudflare Worker setup.
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 const DUPLICATE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
