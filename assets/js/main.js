@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-const SHEETDB_ENDPOINT = "https://sheetdb.io/api/v1/YOUR_SHEETDB_ID";
 
 const form = document.getElementById("waitlistForm");
 const submitBtn = document.getElementById("submitBtn");
@@ -92,28 +91,32 @@ function setupSmoothScroll() {
   });
 }
 
-async function submitToSheetDB(payload) {
-  if (SHEETDB_ENDPOINT.includes("YOUR_SHEETDB_ID")) {
-    throw new Error("Missing SheetDB endpoint ID");
-  }
-
-  const res = await fetch(SHEETDB_ENDPOINT, {
+async function submitWaitlist(payload) {
+  const res = await fetch("/api/waitlist", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
-  if (!res.ok) {
-    let details = "";
-    try {
-      details = await res.text();
-    } catch {
-      // ignore
-    }
-    throw new Error(`Request failed (${res.status}). ${details}`.trim());
+  if (res.status === 204) {
+    return { ok: true, silent: true };
   }
 
-  return res;
+  let body = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+
+  if (!res.ok) {
+    const message =
+      body?.message ||
+      "Something went wrong. Please try again in a moment.";
+    throw new Error(message);
+  }
+
+  return body || { ok: true };
 }
 
 function getFormData() {
@@ -155,19 +158,15 @@ function validate(data) {
 
 function buildPayload(data) {
   return {
-    data: [
-      {
-        full_name: data.full_name,
-        email: data.email,
-        university_or_status: data.current_status,
-        target_role_category: data.target_role_category,
-        preferred_location: data.preferred_location,
-        sponsorship_need: data.sponsorship_need,
-        notes: data.notes,
-        consent: data.consent ? "yes" : "no",
-        submitted_at: new Date().toISOString(),
-      },
-    ],
+    full_name: data.full_name,
+    email: data.email,
+    current_status: data.current_status,
+    target_role_category: data.target_role_category,
+    preferred_location: data.preferred_location,
+    sponsorship_need: data.sponsorship_need,
+    notes: data.notes,
+    consent: data.consent,
+    website: data.honeypot,
   };
 }
 
@@ -207,7 +206,8 @@ function attachFormHandler() {
 
     try {
       const payload = buildPayload(data);
-      await submitToSheetDB(payload);
+      const response = await submitWaitlist(payload);
+      if (response?.silent) return;
 
       form.reset();
       showSuccess();
@@ -215,7 +215,9 @@ function attachFormHandler() {
       console.error(err);
       setMessage(
         "error",
-        "Something went wrong. Please try again in a moment (and make sure the SheetDB endpoint is set)."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again in a moment."
       );
     } finally {
       setLoading(false);
@@ -226,4 +228,3 @@ function attachFormHandler() {
 setupSmoothScroll();
 setupModalEvents();
 attachFormHandler();
-
