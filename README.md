@@ -26,6 +26,11 @@ Set this in Vercel Project Settings (Environment Variables):
 - `SHEETDB_ENDPOINT`
   - Full URL, for example: `https://sheetdb.io/api/v1/xxxxx`
 
+Optional (local dev only):
+
+- `api/config.local.js`
+  - This file is gitignored. Copy `api/config.local.example.js` to `api/config.local.js` and set `SHEETDB_ENDPOINT`.
+
 ## Local development
 
 1. Install Vercel CLI (once):

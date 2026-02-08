@@ -190,9 +190,19 @@ function validateAndSanitise(payload) {
 }
 
 async function forwardToSheetDB(row) {
-  const endpoint = process.env.SHEETDB_ENDPOINT;
+  let localEndpoint = "";
+  try {
+    // Optional local override for dev; do not use for production deploys.
+    // This file is gitignored.
+    // eslint-disable-next-line global-require, import/no-dynamic-require
+    localEndpoint = require("./config.local").SHEETDB_ENDPOINT || "";
+  } catch {
+    localEndpoint = "";
+  }
+
+  const endpoint = process.env.SHEETDB_ENDPOINT || localEndpoint;
   if (!endpoint) {
-    throw new Error("Missing SHEETDB_ENDPOINT environment variable");
+    throw new Error("Missing SHEETDB_ENDPOINT (env var) or api/config.local.js");
   }
 
   const controller = new AbortController();
