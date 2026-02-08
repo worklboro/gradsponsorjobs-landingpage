@@ -99,6 +99,12 @@ From `cloudflare/worker/`:
 
 See `cloudflare/worker/README.md` for the full Worker setup and testing commands.
 
+## Healthcheck
+
+If Cloudflare routing is correct, this should return JSON from the Worker:
+
+- `GET https://gradsponsorjobs.com/api/test`
+
 ## API behaviour (`POST /api/waitlist`)
 
 - Validates required fields and basic email format.

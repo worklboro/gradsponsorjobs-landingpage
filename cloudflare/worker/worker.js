@@ -68,7 +68,7 @@ export default {
         status: 204,
         headers: {
           ...getCorsHeaders(request),
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
           "Access-Control-Max-Age": "86400",
           "Cache-Control": "no-store",
@@ -76,23 +76,27 @@ export default {
       });
     }
 
+    if (url.pathname === "/api/test") {
+      if (request.method !== "GET") {
+        return jsonResponse(request, 405, { error: "Method not allowed" });
+      }
+
+      return jsonResponse(request, 200, {
+        ok: true,
+        service: "gradsponsorjobs-worker",
+        ts: new Date().toISOString(),
+      });
+    }
+
     if (url.pathname !== "/api/waitlist") {
-      return jsonResponse(request, 404, { message: "Not found." });
+      if (url.pathname.startsWith("/api/")) {
+        return jsonResponse(request, 404, { message: "Not found" });
+      }
+      return jsonResponse(request, 404, { message: "Not found" });
     }
 
     if (request.method !== "POST") {
-      return new Response(
-        JSON.stringify({ error: "Method not allowed" }),
-        {
-          status: 405,
-          headers: {
-            ...getCorsHeaders(request),
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store",
-            Allow: "POST, OPTIONS",
-          },
-        }
-      );
+      return jsonResponse(request, 405, { error: "Method not allowed" });
     }
 
     const contentType = request.headers.get("Content-Type") || "";
@@ -200,4 +204,3 @@ export default {
     }
   },
 };
-

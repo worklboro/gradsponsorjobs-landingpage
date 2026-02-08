@@ -1,5 +1,4 @@
-name = "gradsponsorjobs-api-proxy"
+name = "gradsponsor-waitlist"
 main = "worker.js"
 compatibility_date = "2026-02-08"
 workers_dev = true
-
