@@ -1,4 +1,5 @@
 {
+  "_note": "Legacy Vercel headers config (archived). Not used in Cloudflare Worker + GitHub Pages setup.",
   "headers": [
     {
       "source": "/(.*)",

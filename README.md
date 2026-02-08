@@ -1,6 +1,6 @@
 # Gradsponsor Jobs
 
-Production-ready static landing page for gradsponsorjobs.com (waitlist version), now with a Vercel serverless proxy for secure submissions.
+Production-ready static landing page for gradsponsorjobs.com (waitlist version), with a Cloudflare Worker proxy for secure waitlist submissions.
 
 ## Files
 
@@ -9,45 +9,48 @@ Production-ready static landing page for gradsponsorjobs.com (waitlist version),
 - `terms.html`
 - `assets/css/main.css`
 - `assets/js/main.js`
-- `api/waitlist.js`
-- `vercel.json`
+- `cloudflare/worker/worker.js`
+- `cloudflare/worker/wrangler.toml`
 
 ## Architecture (Phase 1)
 
-- Frontend submits waitlist data to `POST /api/waitlist`.
-- Serverless function validates, sanitises, rate limits, and applies duplicate cooldown checks.
-- Function forwards valid payloads to SheetDB using a server-side environment variable.
-- SheetDB endpoint is no longer exposed in client-side JavaScript.
+- GitHub Pages hosts the static site.
+- Frontend submits waitlist data to `POST /api/waitlist` (same-origin).
+- Cloudflare Worker intercepts `/api/*` and handles `/api/waitlist`.
+- Worker validates/sanitises the payload and forwards it to SheetDB using a secret env var.
+- The SheetDB endpoint never appears in client-side JavaScript.
 
 ## Environment variables
 
-Set this in Vercel Project Settings (Environment Variables):
+Set this as a Cloudflare Worker secret:
 
 - `SHEETDB_ENDPOINT`
   - Full URL, for example: `https://sheetdb.io/api/v1/xxxxx`
-
-Optional (local dev only):
-
-- `api/config.local.js`
-  - This file is gitignored. Copy `api/config.local.example.js` to `api/config.local.js` and set `SHEETDB_ENDPOINT`.
+  - Set with: `wrangler secret put SHEETDB_ENDPOINT`
 
 ## Local development
 
-1. Install Vercel CLI (once):
-   - `npm i -g vercel`
-2. From project root, start local dev:
-   - `vercel dev`
-3. Open the local URL shown by Vercel CLI.
+Static site:
+
+- Open `index.html` directly, or run a simple static server from repo root:
+  - `python3 -m http.server 8080`
+
+Worker:
+
+1. Install Wrangler (once):
+   - `npm i -g wrangler`
+2. From `cloudflare/worker/`, run:
+   - `wrangler dev`
 
 To test the API endpoint directly:
 
 ```bash
-curl -i -X POST http://localhost:3000/api/waitlist \
+curl -i -X POST http://localhost:8787/api/waitlist \
   -H "Content-Type: application/json" \
   -d '{
     "full_name":"Alex Khan",
     "email":"alex@example.com",
-    "current_status":"International student (currently in the UK)",
+    "current_status":"Graduate",
     "target_role_category":"Software / IT",
     "preferred_location":"London",
     "sponsorship_need":"Yes — I need sponsorship",
@@ -57,41 +60,69 @@ curl -i -X POST http://localhost:3000/api/waitlist \
   }'
 ```
 
-## Deploy to Vercel
+## Deploy (GitHub Pages + Cloudflare Worker)
 
-1. Import this repository into Vercel.
-2. Add `SHEETDB_ENDPOINT` in project environment variables.
-3. Deploy.
+### 1) GitHub Pages (static site)
+
+This repo is a plain static site. Enable GitHub Pages on the repository and point it at your default branch/root as desired.
+
+### 2) Cloudflare (DNS + Worker routes)
+
+Cloudflare must be authoritative DNS for your zone (nameservers set to Cloudflare).
+
+#### DNS records for GitHub Pages
+
+Create these DNS records (GitHub Pages):
+
+- `A` record for `@` → `185.199.108.153` (DNS only)
+- `A` record for `@` → `185.199.109.153` (DNS only)
+- `A` record for `@` → `185.199.110.153` (DNS only)
+- `A` record for `@` → `185.199.111.153` (DNS only)
+- `CNAME` for `www` → `<your-github-username>.github.io` (DNS only)
+
+Note: Worker routes only run on traffic that passes through Cloudflare (proxied/orange-cloud). If requests bypass Cloudflare, `/api/*` will 404 from GitHub Pages.
+
+#### Worker routes (map to the Worker)
+
+In Cloudflare Dashboard → Workers & Pages → Workers → Routes, add:
+
+- `gradsponsorjobs.com/api/*`
+- `www.gradsponsorjobs.com/api/*`
+
+### 3) Deploy the Worker
+
+From `cloudflare/worker/`:
+
+1. `wrangler login`
+2. `wrangler secret put SHEETDB_ENDPOINT`
+3. `wrangler deploy`
+
+See `cloudflare/worker/README.md` for the full Worker setup and testing commands.
 
 ## API behaviour (`POST /api/waitlist`)
 
-- Validates required fields and allowed option values.
-- Sanitises inputs (strip HTML tags, trim whitespace, apply max lengths).
+- Validates required fields and basic email format.
+- Sanitises inputs (trim whitespace, remove `<`/`>`, apply max lengths).
 - Honeypot (`website`) submissions return `204 No Content`.
-- Rate limit: 10 requests per 10 minutes per IP (best effort).
-- Duplicate cooldown: same email blocked for 24 hours (best effort).
-- On SheetDB timeout or failure, returns `502` with a friendly message.
-
-## Phase 1 limitations
-
-The rate limiter and duplicate cooldown use in-memory Maps in the serverless runtime. This is intentionally lightweight and best effort:
-
-- State is not guaranteed across cold starts.
-- State is not shared globally across all regions/instances.
-
-Recommended Phase 2: move rate-limit and duplicate state to durable storage (for example Upstash Redis or Vercel KV).
+- On upstream timeout or failure, returns `502` with a friendly message (fail closed).
 
 ## Security headers
 
-Configured in `vercel.json`:
+Vercel-style security headers are archived in `archive/vercel/vercel.json`.
+
+If you want equivalent headers on Cloudflare, use:
+
+- Cloudflare Dashboard → Rules → Transform Rules → **HTTP Response Header Modification**
+
+Recommended header set:
 
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `X-Frame-Options: DENY`
-- `Content-Security-Policy` with Google Fonts support and `frame-ancestors 'none'`
-- `Strict-Transport-Security`
+- `Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
 
-HSTS should only be served over HTTPS in production. Vercel production deployments are HTTPS by default.
+HSTS should only be served over HTTPS in production.
 
 ## Legal pages
 
@@ -104,3 +135,7 @@ Consent text on the waitlist form links to both pages.
 
 - `CONTRIBUTING.md`
 - `SECURITY.md`
+
+## Legacy (Vercel)
+
+Previous Vercel serverless implementation is archived under `archive/vercel/` for reference only.
