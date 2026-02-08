@@ -48,6 +48,9 @@ coverage/
 .env.*
 !.env.example
 
+# Local serverless config (do not commit)
+api/config.local.js
+
 # Runtime / misc
 *.pid
 *.seed
@@ -68,4 +71,3 @@ coverage/
 # Local tooling
 .eslintcache
 .stylelintcache
-
