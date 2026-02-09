@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
 
+const API_BASE = "https://gradsponsor-waitlist.worklboro.workers.dev";
+
 const form = document.getElementById("waitlistForm");
 const submitBtn = document.getElementById("submitBtn");
 const messageEl = document.getElementById("formMessage");
@@ -92,7 +94,7 @@ function setupSmoothScroll() {
 }
 
 async function submitWaitlist(payload) {
-  const res = await fetch("/api/waitlist", {
+  const res = await fetch(`${API_BASE}/api/waitlist`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
