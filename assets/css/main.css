@@ -414,8 +414,10 @@ h1 {
   margin-top: 12px;
   padding: 12px;
   border-radius: 14px;
-  border: 1px solid rgba(10, 23, 72, 0.16);
-  background: rgba(10, 23, 72, 0.045);
+  border: 1px solid rgba(10, 23, 72, 0.3);
+  border-left: 4px solid rgba(10, 23, 72, 0.8);
+  background: rgba(10, 23, 72, 0.08);
+  box-shadow: 0 8px 22px rgba(10, 23, 72, 0.08);
 }
 
 .hero .offer-note {
