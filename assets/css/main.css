@@ -410,6 +410,34 @@ h1 {
   line-height: 1.45;
 }
 
+.offer-note {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(10, 23, 72, 0.16);
+  background: rgba(10, 23, 72, 0.045);
+}
+
+.hero .offer-note {
+  max-width: 62ch;
+}
+
+.offer-note p {
+  margin: 0;
+  color: rgba(15, 25, 32, 0.68);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.offer-note p + p {
+  margin-top: 8px;
+}
+
+.offer-note .offer-note-title {
+  color: rgba(10, 23, 72, 0.96);
+  font-weight: 900;
+}
+
 .message {
   margin: 8px 6px 10px;
   padding: 10px 11px;
